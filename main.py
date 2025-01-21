@@ -9,7 +9,7 @@ import random
 import time
 import threading
 
-MAX_THEADS = 7
+MAX_THEADS = 20
 ENTRY_SITE = "https://news.ycombinator.com/"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
 
@@ -42,7 +42,7 @@ def crawl(url: str, first = False):
     h1 = soup.h1.string if soup.h1 is not None else None
     description = soup.find("meta", attrs={"name": "description"})
     description = soup.find("meta", attrs={"name": "keywords"})
-    content = soup.get_text()[:200]
+    content = soup.get_text()[:1000]
 
     contents = [(title, 10), (h1, 9), (description, 8), (content, 3)]
     contents = [c for c in contents if c[0] is not None]
