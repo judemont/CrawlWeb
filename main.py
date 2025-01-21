@@ -7,13 +7,13 @@ import socket
 from utils import Utils
 import random
 import time
-import threading
+from concurrent.futures import ThreadPoolExecutor
 
-MAX_THEADS = 20
+MAX_THREADS = 20
 ENTRY_SITE = "https://news.ycombinator.com/"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
 
-def crawl(url: str, first = False):
+def crawl(url: str, first=False):
     db = Database("data.db")
 
     headers = {
@@ -23,7 +23,6 @@ def crawl(url: str, first = False):
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
     except Exception as e:
-        # print(e)
         return
     
     soup = BeautifulSoup(response.text, "html.parser")
@@ -33,7 +32,6 @@ def crawl(url: str, first = False):
     sites = db.get_sites(url=normalized_url)
     if len(sites) > 0 and not first:
         return
-    
 
     db.new_site(normalized_url, int(time.time()), 0)
     site_id = db.get_sites(url=normalized_url)[0][0]
@@ -51,23 +49,22 @@ def crawl(url: str, first = False):
         db.new_contents(site_id, content, score)
 
     print(f"{normalized_url}")
-    
 
-    for a in soup.find_all("a"):
-        a_url = a.get("href")
+    with ThreadPoolExecutor(max_workers=MAX_THREADS) as executor:
+        futures = []
+        for a in soup.find_all("a"):
+            a_url = a.get("href")
 
-        if a_url is None:
-            continue
+            if a_url is None:
+                continue
 
-        if not a_url.startswith("http"):
-            a_url = urljoin(url, a_url)
+            if not a_url.startswith("http"):
+                a_url = urljoin(url, a_url)
 
-        if threading.active_count() < MAX_THEADS:
-            time.sleep(random.randint(1, 3)/2)
-            threading.Thread(target=crawl, args=(a_url,)).start()
-        else:
-            crawl(a_url)
+            futures.append(executor.submit(crawl, a_url))
 
+        for future in futures:
+            future.result()
 
 if __name__ == "__main__":
     sites = Database("data.db").get_sites()
