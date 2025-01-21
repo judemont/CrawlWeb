@@ -39,10 +39,12 @@ def crawl(url: str, first=False):
     title = soup.title.string
     h1 = soup.h1.string if soup.h1 is not None else None
     description = soup.find("meta", attrs={"name": "description"})
-    description = soup.find("meta", attrs={"name": "keywords"})
+    description = description["content"] if description else None
+    keywords = soup.find("meta", attrs={"name": "keywords"})
+    keywords = keywords["content"] if keywords else None
     content = soup.get_text()[:1000]
 
-    contents = [(title, 10), (h1, 9), (description, 8), (content, 3)]
+    contents = [(title, 10), (h1, 9), (description, 8), (keywords, 7), (content, 3)]
     contents = [c for c in contents if c[0] is not None]
 
     for content, score in contents:
